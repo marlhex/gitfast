@@ -1,0 +1,75 @@
+name: Build, Lint, and Deploy
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-lint:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+          bundler-cache: true
+
+      - name: Cache Cocoapods
+        uses: actions/cache@v3
+        with:
+          path: Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Install Cocoapods
+        run: |
+          pod install
+
+      - name: Build
+        run: |
+          # Add your build commands here (e.g., xcodebuild, fastlane gym, etc.)
+
+      - name: Lint
+        run: |
+          # Add your linting commands here (e.g., SwiftLint)
+
+  deploy:
+    needs: build-lint
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          bundle exec fastlane install_plugins
+
+      - name: Deploy to App Store Connect
+        run: |
+          # Add your Fastlane deploy commands here (e.g., fastlane deliver)
+          bundle exec fastlane deploy_appstore
+
+      - name: Deploy to TestFlight
+        run: |
+          # Add your Fastlane deploy commands here (e.g., fastlane beta)
+          bundle exec fastlane deploy_testflight
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-artifacts
+           path: |
+            ./fastlane/artifacts/*.ipa
+            ./fastlane/artifacts/*.dSYM.zip
